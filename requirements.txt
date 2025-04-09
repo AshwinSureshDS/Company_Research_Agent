@@ -1,22 +1,17 @@
-# Core AI & LLM/Embeddings Libraries
-langchain>=0.0.170
-llama-index>=0.5.7
-
-# Recommended for Gemini (LLM & Embeddings) integration
-gemini-ai>=1.0.0
-
-# Vector DB client for Pinecone
+# Core dependencies
+agno>=0.1.0
+google-generativeai>=0.3.0
 pinecone-client>=2.2.1
-
-# CrewAI (if using for additional AI agent functionality)
-crewai>=0.1.0
-
-# Web framework & API server for integration and real-time data endpoints
 fastapi>=0.95.0
 uvicorn>=0.22.0
-
-# Environment variable management (for API keys, etc.)
 python-dotenv>=1.0.0
-
-# HTTP requests for real-time API calls
 requests>=2.28.2
+beautifulsoup4>=4.12.0
+
+# API integrations
+newsapi-python>=0.2.7
+jina-reader>=0.1.0
+
+# Optional dependencies
+pydantic>=2.0.0
+asyncio>=3.4.3

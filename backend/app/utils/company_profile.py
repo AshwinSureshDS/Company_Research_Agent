@@ -1,18 +1,26 @@
 # backend/app/utils/company_profile.py
 import google.generativeai as genai
 from ..config import GEMINI_API_KEY
+from ..tools import search_company, get_company_wiki
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-def get_company_profile(company_name: str) -> dict:
+async def get_company_profile(company_name: str) -> dict:
     """
-    Get company profile information using Gemini.
-    This will be enhanced with real API calls in Phase 2.
+    Get comprehensive company profile information using multiple sources.
     """
-    # Placeholder implementation - will be replaced with actual Gemini API calls
-    return {
+    # Get information from Wikipedia
+    wiki_info = get_company_wiki(company_name)
+    
+    # Get information from search
+    search_info = search_company(company_name)
+    
+    # Combine the information
+    profile = {
         "company_name": company_name,
-        "business_model": "Example business model for " + company_name,
-        "financial_overview": "Key financial metrics not available in mock."
+        "wiki_summary": wiki_info.get("extract", "No Wikipedia information available"),
+        "search_results": search_info.get("organic", [])[:3] if "organic" in search_info else [],
     }
+    
+    return profile
