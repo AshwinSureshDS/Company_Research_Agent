@@ -1,6 +1,6 @@
 # backend/app/agent/__init__.py
+# Let's use a simpler approach based on the actual Agno repository
 from agno.agent import Agent
-# Fix the Tool import - it's likely in a different location
 import google.generativeai as genai
 from ..config import GEMINI_API_KEY
 from ..tools import search_company, get_company_news, get_company_wiki, extract_article_content
@@ -9,10 +9,10 @@ from .. import memory_manager
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Since we can't import Tool directly, let's define our tools directly in the Agent
-# Create the agent with proper Agno configuration
+# Create the agent directly using the Agent class
 research_agent = Agent(
     model="gemini-1.5-pro",
+    description="You are a company research assistant. Your goal is to help users research companies efficiently.",
     tools=[
         {
             "name": "search_company",
@@ -36,12 +36,12 @@ research_agent = Agent(
         }
     ],
     instructions=[
-        "You are a company research assistant. Your goal is to help users research companies efficiently.",
         "Always provide accurate and helpful information based on the user's query.",
         "Use the tools to gather information about companies when needed.",
         "Summarize information in a clear, concise manner.",
         "If the user asks about a company, use the appropriate tools to research it."
     ],
+    show_tool_calls=True,
     markdown=True
 )
 
@@ -113,12 +113,17 @@ async def generate_response(user_id, query, use_memory=True):
         
         # Generate response with error handling
         try:
-            # Use the run method for synchronous calls or arun for async
-            response = await research_agent.arun(enhanced_query)
+            # Properly handle AgentResponse object
+            agent_response = await research_agent.arun(enhanced_query)
+            response = agent_response.output  # Extract actual response text
         except Exception as e:
             print(f"Error with enhanced query: {str(e)}")
-            # Fallback to a simpler query if the enhanced query fails
-            response = await research_agent.arun(query)
+            # Fallback with proper error handling
+            try:
+                agent_response = await research_agent.arun(query)
+                response = agent_response.output if hasattr(agent_response, 'output') else str(agent_response)
+            except Exception as fallback_error:
+                response = f"Error processing request: {str(fallback_error)}"
             response += "\n\nNote: I had some trouble accessing your previous context."
         
         # Store conversation in memory
