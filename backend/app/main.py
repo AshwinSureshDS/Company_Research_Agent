@@ -3,5 +3,5 @@ from fastapi import FastAPI
 app = FastAPI()
 
 @app.get("/")
-def read_root():
-    return {"message": "Hello from your Company Research Bot!"}
+async def root():
+    return {"message": "Company Research Chatbot API is running."}
