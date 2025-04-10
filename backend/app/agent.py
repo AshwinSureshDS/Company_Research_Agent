@@ -8,7 +8,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 class ResearchAgent:
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
     
     def generate_response(self, user_id, query, use_memory=True):
         """Generate a response to the user query using Gemini and memory."""
