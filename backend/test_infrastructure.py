@@ -3,7 +3,11 @@ import asyncio
 import pprint
 from app.memory.vector_store import init_pinecone, store_in_pinecone, query_pinecone
 from app.memory.session import MemoryManager
-from app.tools import search_company, get_company_news, get_company_wiki, extract_article_content
+# Update imports to use the wrapper functions
+from app.tools import (
+    search_company, get_company_news, get_company_wiki, extract_article_content,
+    search_company_wrapper, get_company_news_wrapper, get_company_wiki_wrapper, extract_article_content_wrapper
+)
 from app.agent import generate_response
 
 def test_pinecone_connection():

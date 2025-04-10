@@ -1,39 +1,27 @@
 # backend/app/agent/__init__.py
-# Let's use a simpler approach based on the actual Agno repository
 from agno.agent import Agent
 import google.generativeai as genai
 from ..config import GEMINI_API_KEY
-from ..tools import search_company, get_company_news, get_company_wiki, extract_article_content
+from ..tools import (
+    search_company_wrapper, 
+    get_company_news_wrapper, 
+    get_company_wiki_wrapper, 
+    extract_article_content_wrapper
+)
 from .. import memory_manager
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Create the agent directly using the Agent class
+# Create agent with model name instead of instance
 research_agent = Agent(
-    model="gemini-1.5-pro",
-    description="You are a company research assistant. Your goal is to help users research companies efficiently.",
+    model="gemini-2.0-flash",
+    description="You are a company research assistant...",
     tools=[
-        {
-            "name": "search_company",
-            "description": "Search for general information about a company",
-            "function": search_company
-        },
-        {
-            "name": "get_company_news",
-            "description": "Get the latest news articles about a company",
-            "function": get_company_news
-        },
-        {
-            "name": "get_company_wiki",
-            "description": "Get Wikipedia information about a company",
-            "function": get_company_wiki
-        },
-        {
-            "name": "extract_article_content",
-            "description": "Extract the content from a news article URL",
-            "function": extract_article_content
-        }
+        search_company_wrapper,
+        get_company_news_wrapper,
+        get_company_wiki_wrapper,
+        extract_article_content_wrapper
     ],
     instructions=[
         "Always provide accurate and helpful information based on the user's query.",
@@ -104,30 +92,41 @@ async def generate_response(user_id, query, use_memory=True):
             memory_context = get_memory_context(user_id, query)
         
         # Add memory context to the query
-        enhanced_query = f"""
-        Memory Context:
-        {memory_context}
+        enhanced_query = f"""Memory Context:
+{memory_context}
+
+User Query: {query}"""
         
-        User Query: {query}
-        """
-        
-        # Generate response with error handling
+        # Generate response with proper error handling
         try:
-            # Properly handle AgentResponse object
-            agent_response = await research_agent.arun(enhanced_query)
-            response = agent_response.output  # Extract actual response text
+            # Try with structured input format
+            response = await research_agent.arun({"query": enhanced_query})
+            
+            # Handle response based on its type
+            if isinstance(response, str):
+                final_response = response
+            else:
+                # Try to extract response text using common attributes
+                final_response = getattr(response, "text", None)
+                if final_response is None:
+                    final_response = getattr(response, "content", None)
+                if final_response is None:
+                    final_response = str(response)
+                
         except Exception as e:
             print(f"Error with enhanced query: {str(e)}")
-            # Fallback with proper error handling
+            # Fallback to direct model generation
             try:
-                agent_response = await research_agent.arun(query)
-                response = agent_response.output if hasattr(agent_response, 'output') else str(agent_response)
+                # Use the Gemini model directly as fallback
+                fallback_response = gemini_model.generate_content(query)
+                final_response = fallback_response.text
+                print("Fallback response generated successfully")
             except Exception as fallback_error:
-                response = f"Error processing request: {str(fallback_error)}"
-            response += "\n\nNote: I had some trouble accessing your previous context."
+                print(f"Fallback also failed: {str(fallback_error)}")
+                final_response = "I'm sorry, I encountered an error while processing your request. Please try again."
         
         # Store conversation in memory
-        memory_manager.store_conversation(user_id, query, response)
+        memory_manager.store_conversation(user_id, query, final_response)
         
         # Extract and store company names
         company_names = extract_company_names(query)
@@ -138,7 +137,7 @@ async def generate_response(user_id, query, use_memory=True):
                 {"mentioned_in": query}
             )
         
-        return response
+        return final_response
     except Exception as e:
         # Log the error and return a graceful message
         print(f"Error generating response: {str(e)}")

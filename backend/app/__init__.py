@@ -1,9 +1,19 @@
 # backend/app/__init__.py
-from .memory.vector_store import init_pinecone
-from .memory.session import MemoryManager
+# First, create the memory_manager module
+from .memory import vector_store
+memory_manager = vector_store
 
-# Initialize Pinecone
-pinecone_index = init_pinecone()
+# Then import other modules that depend on memory_manager
+from .session import (
+    ChatSession, 
+    create_session, 
+    get_session, 
+    delete_session, 
+    generate_chat_response,
+    get_session_history,
+    list_sessions
+)
+from .agent import generate_response, research_agent
 
-# Create a memory manager instance
-memory_manager = MemoryManager(pinecone_index)
+# Version information
+__version__ = "0.1.0"
