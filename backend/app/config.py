@@ -4,6 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "your_gemini_api_key")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "your_pinecone_api_key")
-PINECONE_ENV = os.getenv("PINECONE_ENV", "your_pinecone_environment")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_ENV = os.getenv("PINECONE_ENV")
+PINECONE_INDEX = os.getenv("PINECONE_INDEX")
+SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
+
+# Model settings
+EMBEDDING_DIMENSION = 768  # Dimension for Gemini embeddings
