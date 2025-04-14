@@ -3,11 +3,40 @@ import asyncio
 import uuid
 import time
 import random
+import os
+import sys
 from typing import List, Optional
+from fastapi.middleware.cors import CORSMiddleware
 from .agent.company_agent import generate_response
 from .tools.company_tools import get_stock_price, compare_stocks
 
+# Increase socket buffer size for Windows
+if sys.platform == 'win32':
+    import socket
+    socket.setdefaulttimeout(30)  # 30 second timeout
+    
+    # Try to increase the socket buffer size
+    try:
+        # Attempt to free up socket resources
+        for i in range(10):
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.close()
+            except:
+                pass
+    except:
+        pass
+
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
@@ -93,5 +122,7 @@ async def main():
         # Display response
         print(f"\nAgent: {response}")
 
+# Use uvicorn to run the app instead of asyncio.run
 if __name__ == "__main__":
-    asyncio.run(main())
+    import uvicorn
+    uvicorn.run("backend.app.main:app", host="0.0.0.0", port=8000, reload=True)
