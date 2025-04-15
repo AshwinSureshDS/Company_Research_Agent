@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Body
 import asyncio
 import uuid
 import time
@@ -9,6 +9,9 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 from .agent.company_agent import generate_response
 from .tools.company_tools import get_stock_price, compare_stocks
+import json
+from pathlib import Path
+from datetime import datetime
 
 # Increase socket buffer size for Windows
 if sys.platform == 'win32':
@@ -26,6 +29,10 @@ if sys.platform == 'win32':
                 pass
     except:
         pass
+
+# Create a directory for storing chat history
+CHAT_DIR = Path("d:/College/Company_Research_Chatbot/backend/data/chats")
+CHAT_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI()
 
@@ -71,6 +78,124 @@ async def chat(request: dict):
     try:
         response = await retry_with_backoff(generate_response, user_id, query)
         return {"response": response, "user_id": user_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/chats/")
+async def get_chats():
+    """Get all chat histories."""
+    chats = []
+    try:
+        for chat_file in CHAT_DIR.glob("*.json"):
+            with open(chat_file, "r") as f:
+                chat = json.load(f)
+                chats.append(chat)
+        return {"chats": chats}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/chats/{chat_id}")
+async def get_chat(chat_id: str):
+    """Get a specific chat history."""
+    chat_path = CHAT_DIR / f"{chat_id}.json"
+    if not chat_path.exists():
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    try:
+        with open(chat_path, "r") as f:
+            chat = json.load(f)
+        return {"chat": chat}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/chats/{chat_id}")
+async def save_chat(chat_id: str, chat_data: dict = Body(...)):
+    """Save a chat history."""
+    chat = chat_data.get("chat")
+    if not chat:
+        raise HTTPException(status_code=400, detail="Chat data is required")
+    
+    try:
+        chat_path = CHAT_DIR / f"{chat_id}.json"
+        with open(chat_path, "w") as f:
+            json.dump(chat, f)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/chats/{chat_id}")
+async def delete_chat(chat_id: str):
+    """Delete a chat history."""
+    chat_path = CHAT_DIR / f"{chat_id}.json"
+    if not chat_path.exists():
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    try:
+        os.remove(chat_path)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/api/chats/{chat_id}/title")
+async def update_chat_title(chat_id: str, title_data: dict = Body(...)):
+    """Update a chat title."""
+    new_title = title_data.get("title")
+    if not new_title:
+        raise HTTPException(status_code=400, detail="Title is required")
+    
+    chat_path = CHAT_DIR / f"{chat_id}.json"
+    if not chat_path.exists():
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    try:
+        with open(chat_path, "r") as f:
+            chat = json.load(f)
+        
+        chat["title"] = new_title
+        chat["updatedAt"] = datetime.now().isoformat()
+        
+        with open(chat_path, "w") as f:
+            json.dump(chat, f)
+        
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chats/{chat_id}/messages")
+async def add_message_to_chat(chat_id: str, message_data: dict = Body(...)):
+    """Add a message to a chat."""
+    message = message_data.get("message")
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+    
+    chat_path = CHAT_DIR / f"{chat_id}.json"
+    
+    try:
+        if chat_path.exists():
+            with open(chat_path, "r") as f:
+                chat = json.load(f)
+        else:
+            # Create a new chat if it doesn't exist
+            chat = {
+                "id": chat_id,
+                "title": "New Conversation",
+                "messages": [],
+                "createdAt": datetime.now().isoformat(),
+                "updatedAt": datetime.now().isoformat()
+            }
+        
+        # Update title if it's the first user message and title is default
+        if len(chat["messages"]) == 0 and message["role"] == "user" and chat["title"] == "New Conversation":
+            content = message["content"]
+            chat["title"] = content[:30] + "..." if len(content) > 30 else content
+        
+        chat["messages"].append(message)
+        chat["updatedAt"] = datetime.now().isoformat()
+        
+        with open(chat_path, "w") as f:
+            json.dump(chat, f)
+        
+        return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
