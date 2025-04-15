@@ -39,7 +39,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["http://localhost:3000"],  # Specifically allow your Next.js frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,17 +81,26 @@ async def chat(request: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Add logging for better error tracking
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @app.get("/api/chats/")
 async def get_chats():
     """Get all chat histories."""
     chats = []
     try:
+        logger.info(f"Fetching chats from {CHAT_DIR}")
         for chat_file in CHAT_DIR.glob("*.json"):
             with open(chat_file, "r") as f:
                 chat = json.load(f)
                 chats.append(chat)
         return {"chats": chats}
     except Exception as e:
+        logger.error(f"Error fetching chats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/chats/{chat_id}")
