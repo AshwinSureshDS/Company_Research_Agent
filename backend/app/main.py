@@ -7,11 +7,19 @@ import os
 import sys
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
-from .agent.company_agent import generate_response
+# Fix the import statement
+from backend.app.agent.company_agent import generate_response, check_query_relevance
 from .tools.company_tools import get_stock_price, compare_stocks
 import json
 from pathlib import Path
 from datetime import datetime
+from .embeddings import generate_embedding, batch_generate_embeddings
+from .memory import initialize_pinecone, store_memory, query_similar
+from .data_ingestion import process_company_data
+from .memory import initialize_pinecone, delete_company_data
+
+# Add this import to get CHAT_DIR from config
+from backend.app.config import CHAT_DIR
 
 # Increase socket buffer size for Windows
 if sys.platform == 'win32':
@@ -30,16 +38,24 @@ if sys.platform == 'win32':
     except:
         pass
 
-# Create a directory for storing chat history
-CHAT_DIR = Path("d:/College/Company_Research_Chatbot/backend/data/chats")
+# Create chat directory if it doesn't exist
 CHAT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Initialize FastAPI app
 app = FastAPI()
+
+# Add logging for better error tracking
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize Pinecone (only once)
+pinecone_index = initialize_pinecone()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Specifically allow your Next.js frontend
+    allow_origins=["*"],  # Allow all origins temporarily for debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,6 +82,7 @@ async def compare_stock_prices(symbols: str = Query(..., description="Comma-sepa
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
+# Update the chat endpoint to handle the new query relevance types
 @app.post("/api/chat/")
 async def chat(request: dict):
     """Generate a response to a user query."""
@@ -76,18 +93,39 @@ async def chat(request: dict):
         raise HTTPException(status_code=400, detail="Query is required")
     
     try:
+        # Generate response with retry mechanism
         response = await retry_with_backoff(generate_response, user_id, query)
         return {"response": response, "user_id": user_id}
     except Exception as e:
+        logger.error(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Add logging for better error tracking
-import logging
+@app.post("/api/ingest-company/")
+async def ingest_company_data(data: dict = Body(...)):
+    """Ingest data for a specific company."""
+    company_name = data.get("company_name")
+    company_symbol = data.get("company_symbol")
+    
+    if not company_name:
+        raise HTTPException(status_code=400, detail="Company name is required")
+    
+    try:
+        # Delete existing data for this company
+        delete_company_data(pinecone_index, company_name)
+        
+        # Process and store new data
+        chunks_processed = await process_company_data(company_name, company_symbol)
+        
+        return {
+            "success": True, 
+            "company_name": company_name,
+            "chunks_processed": chunks_processed
+        }
+    except Exception as e:
+        logger.error(f"Error ingesting company data: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+# Chat history management endpoints
 @app.get("/api/chats/")
 async def get_chats():
     """Get all chat histories."""

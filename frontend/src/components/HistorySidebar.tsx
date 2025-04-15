@@ -33,6 +33,8 @@ export default function HistorySidebar({
 }: HistorySidebarProps) {
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
 
   const handleRenameClick = (chatId: string, currentTitle: string) => {
     setEditingChatId(chatId);
@@ -44,6 +46,19 @@ export default function HistorySidebar({
       onRenameChat(chatId, editTitle);
     }
     setEditingChatId(null);
+  };
+
+  const handleDeleteClick = (chatId: string) => {
+    setChatToDelete(chatId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (chatToDelete) {
+      onDeleteChat(chatToDelete);
+    }
+    setShowDeleteModal(false);
+    setChatToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -81,7 +96,7 @@ export default function HistorySidebar({
           ) : (
             <ul className="space-y-1 px-2">
               {chatHistories.map((chat) => (
-                <li key={chat.id}>
+                <li key={chat.id} className="group">
                   {editingChatId === chat.id ? (
                     <div className="flex items-center p-2 rounded-md bg-gray-800">
                       <input
@@ -132,9 +147,9 @@ export default function HistorySidebar({
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDeleteChat(chat.id);
+                            handleDeleteClick(chat.id);
                           }}
-                          className="text-gray-400 hover:text-red-400 p-1"
+                          className="text-gray-400 hover:text-red-400 p-1 visible"
                           aria-label="Delete chat"
                         >
                           <Trash2 size={14} />
@@ -157,6 +172,30 @@ export default function HistorySidebar({
         >
           <ChevronRight size={20} />
         </button>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white text-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full">
+            <h3 className="text-lg font-medium mb-4">Delete Conversation</h3>
+            <p className="mb-6">Are you sure you want to delete this conversation? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
