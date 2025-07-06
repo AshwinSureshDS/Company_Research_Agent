@@ -1,46 +1,67 @@
-AI chatbot agent that helps job seekers and investors efficiently research companies by providing real-time data on company profiles, financials, and industry comparisons. It uses persistent memory to recall user interests and previous queries across sessions, ensuring personalized and up-to-date insights—even after chat resets.
-
 # Company Research Chatbot
 
-This project is a full-stack application designed to provide a chatbot interface for company research. It leverages modern web technologies for the frontend and a Python-based backend for data processing, embeddings, and chat memory management.
+AI chatbot agent that helps job seekers and investors efficiently research companies by providing real-time data on company profiles, financials, and industry comparisons. It uses persistent memory to recall user interests and previous queries across sessions, ensuring personalized and up-to-date insights—even after chat resets.
+
+This project is a full-stack application that combines a modern web frontend with a robust Python backend to deliver a seamless company research chatbot experience.
+
+## Tech Stack
+
+**Frontend:**
+- [Next.js](https://nextjs.org/) (React framework)
+- [Tailwind CSS](https://tailwindcss.com/) (utility-first CSS framework)
+- TypeScript
+
+**Backend:**
+- Python 3.11+
+- [FastAPI](https://fastapi.tiangolo.com/) (high-performance API framework)
+- [LangChain](https://python.langchain.com/) (LLM orchestration)
+- [OpenAI API](https://platform.openai.com/) (LLM integration)
+- [NumPy](https://numpy.org/), [NLTK](https://www.nltk.org/), and more for data processing
+
+**Other:**
+- Persistent chat memory (custom or vector DB)
+- Shell and batch scripts for automation
+
+<img src="Work-flow.png" alt="Workflow Diagram" width="600"/>
 
 ## Features
 - Conversational AI chatbot for company research
+- Real-time company profiles, financials, and industry comparisons
+- Persistent memory for personalized, context-aware conversations
 - Data ingestion and embedding generation
-- Persistent chat memory
-- Modern frontend built with Next.js and Tailwind CSS
-- Backend powered by FastAPI (or similar Python framework)
+- Modern, responsive frontend (Next.js + Tailwind CSS)
+- Fast, scalable backend (FastAPI, LangChain, OpenAI)
 
 ## Project Structure
 ```
 ├── backend/
 │   ├── app/
-│   │   ├── agent/
-│   │   ├── memory/
-│   │   ├── scripts/
-│   │   ├── tools/
-│   │   ├── config.py
-│   │   ├── data_ingestion.py
-│   │   ├── embeddings.py
-│   │   ├── main.py
-│   │   └── utils.py
+│   │   ├── agent/           # Chatbot agent logic
+│   │   ├── memory/          # Persistent memory modules
+│   │   ├── scripts/         # Data/scripts utilities
+│   │   ├── tools/           # Custom tools for the agent
+│   │   ├── config.py        # Configuration
+│   │   ├── data_ingestion.py# Data ingestion pipeline
+│   │   ├── embeddings.py    # Embedding generation
+│   │   ├── main.py          # FastAPI entrypoint
+│   │   └── utils.py         # Utilities
 │   └── data/
-│       └── chats/
+│       └── chats/           # Chat logs/data
 ├── frontend/
-│   ├── public/
+│   ├── public/              # Static assets
 │   └── src/
-│       ├── app/
-│       ├── components/
-│       ├── pages/
-│       ├── services/
-│       └── utils/
-├── requirements.txt
-├── package.json
-├── start-app.bat
-├── start-backend.bat
-├── stop_app.bat
-├── run.sh
-└── Work-flow.png
+│       ├── app/             # Next.js app entry
+│       ├── components/      # React components
+│       ├── pages/           # Next.js pages
+│       ├── services/        # API and data services
+│       └── utils/           # Frontend utilities
+├── requirements.txt         # Python dependencies
+├── package.json             # Node.js dependencies
+├── start-app.bat            # Start all (Windows)
+├── start-backend.bat        # Start backend (Windows)
+├── stop_app.bat             # Stop app (Windows)
+├── run.sh                   # Start backend (Unix)
+└── Work-flow.png            # Workflow diagram
 ```
 
 ## Getting Started
@@ -80,7 +101,6 @@ This project is a full-stack application designed to provide a chatbot interface
 - `run.sh`: Starts backend (Unix)
 
 ## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
-## License
-[MIT](LICENSE)
+
